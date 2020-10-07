@@ -184,12 +184,28 @@ export default class MagitUtils {
 
   public static async confirmAction(prompt: string, hardConfirm: boolean = false) {
 
-    const yesNo = hardConfirm ? 'yes or no' : 'y or n';
-    const confirmed = await window.showInputBox({ prompt: `${prompt} (${yesNo})` });
-    if ((hardConfirm && confirmed?.toLowerCase() === 'yes') || (!hardConfirm && confirmed?.toLowerCase().charAt(0) === 'y')) {
-      return true;
+    if (hardConfirm) {
+      const confirmed = await window.showInputBox({ prompt: `${prompt} (yes or no)` });
+      if (confirmed?.toLowerCase() === 'yes') {
+        return true;
+      }
+      window.setStatusBarMessage('Abort', Constants.StatusMessageDisplayTimeout);
+      return false;
+    } else {
+      return new Promise(resolve => {
+        const confirmInputBox = window.createInputBox();
+        confirmInputBox.prompt = `${prompt} (y or n)`;
+        confirmInputBox.onDidChangeValue(e => {
+          if (e.toLowerCase().charAt(0) === 'y') {
+            confirmInputBox.hide();
+            resolve(true);
+          }
+        });
+        confirmInputBox.onDidAccept(() => resolve(false));
+        confirmInputBox.onDidHide(() => resolve(false));
+        confirmInputBox.show();
+      });
     }
-    window.setStatusBarMessage('Abort', Constants.StatusMessageDisplayTimeout);
     return false;
   }
 
